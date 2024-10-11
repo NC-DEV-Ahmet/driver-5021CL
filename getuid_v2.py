@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+"""
 #   Send GetUID command to the first inserted card
 #   Copyright (C) 2024  Numericoach
 #
@@ -16,36 +16,53 @@
 #   You should have received a copy of the GNU Lesser General Public
 #   License along with this library; if not, write to the Free Software
 #   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+"""
 
 from smartcard.CardType import AnyCardType
 from smartcard.CardRequest import CardRequest
 from smartcard.util import toHexString
+from smartcard.Exceptions import SmartcardException
 
-# 10 seconds timeout
-TIMEOUT = 10
 
-# Wait for a card insertion
-cardrequest = CardRequest(timeout=TIMEOUT, cardType=AnyCardType())
-print(f"Insert a card within {TIMEOUT} seconds")
-cardservice = cardrequest.waitforcard()
+def get_uid():
+    """
+    Get UID from  a contactless card
+    """
+    # 10 seconds timeout
+    timeout = 10
 
-# Connect to the card
-cardservice.connection.connect()
+    # Wait for a card insertion
+    cardrequest = CardRequest(timeout=timeout, cardType=AnyCardType())
+    print(f"Insert a card within {timeout} seconds")
 
-# Get information
-print("Using:", cardservice.connection.getReader())
-print("Card ATR:", toHexString(cardservice.connection.getATR()))
+    try:
+        # may timeout
+        cardservice = cardrequest.waitforcard()
 
-# define the APDUs used in this script
-# 5321-903_b.4_omnikey_contactless_developer_guide_en.pdf
-# page 82, A.7.1 Getting the Card UID (PC/SC 2.01)
+        # Connect to the card
+        # may report an unpowered card
+        cardservice.connection.connect()
+    except SmartcardException as e:
+        print(e)
+        return
 
-GETUID = [0xFF, 0xCA, 0x00, 0x00, 0x00]
+    # Get information
+    print("Using:", cardservice.connection.getReader())
+    print("Card ATR:", toHexString(cardservice.connection.getATR()))
 
-# Get UID
-data, sw1, sw2 = cardservice.connection.transmit(GETUID)
-print("UID:", toHexString(data))
-print("SW: %02X %02X" % (sw1, sw2))
+    # define the APDUs used in this script
+    # 5321-903_b.4_omnikey_contactless_developer_guide_en.pdf
+    # page 82, A.7.1 Getting the Card UID (PC/SC 2.01)
 
-card_number = int.from_bytes(data, byteorder='little')
-print("Card number:", card_number)
+    getuid_cmd = [0xFF, 0xCA, 0x00, 0x00, 0x00]
+
+    # Get UID
+    data, sw1, sw2 = cardservice.connection.transmit(getuid_cmd)
+    print("UID:", toHexString(data))
+    print(f"SW: {sw1:02X} {sw2:02X}")
+
+    card_number = int.from_bytes(data, byteorder='little')
+    print("Card number:", card_number)
+
+
+get_uid()

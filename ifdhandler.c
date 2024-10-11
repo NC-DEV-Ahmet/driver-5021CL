@@ -430,6 +430,9 @@ RESPONSECODE IFDHPowerICC ( DWORD Lun, DWORD Action,
 			if (!card_present)
 				return IFD_ERROR_POWER_ACTION;
 
+			if (!uid_len)
+				return IFD_ERROR_POWER_ACTION;
+
 			unsigned char default_atr[] = {0x3B, 0x8F, 0x80, 0x01, 0x80, 0x4F, 0x0C, 0xA0, 0x00, 0x00, 0x03, 0x06, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x69};
 
 			memcpy(Atr, default_atr, sizeof default_atr);
@@ -589,7 +592,17 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 			for (int i=0; i<len; i++)
 				b ^= res[UID_OFFSET + i];
 			if (b)
-				Log1(PCSC_LOG_CRITICAL, "invalid UID checksum");
+			{
+				char collision[] = {1, 0, 0, 0};
+				if (0 == memcmp(collision, res + UID_OFFSET, sizeof collision))
+				{
+					Log1(PCSC_LOG_INFO, "collision detected");
+					card_present = true;
+					uid_len = 0;
+				}
+				else
+					Log1(PCSC_LOG_CRITICAL, "invalid UID checksum");
+			}
 			else
 			{
 				memcpy(uid, res + UID_OFFSET, len);
