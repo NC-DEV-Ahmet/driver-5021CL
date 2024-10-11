@@ -41,6 +41,9 @@ unsigned char uid[10];		// in general 4 bytes only
 int uid_len;
 bool card_present = false;
 
+// check value returned by escape()
+#define Escape(a, b, c, d) do { int rv2 = escape(a, b, c, d); if (rv2 != IFD_SUCCESS) return rv2; } while (0)
+
 // send a PC_to_RDR_Escape CCID command
 static int escape(unsigned char cmd[], int size, unsigned char res[], int * res_size)
 {
@@ -104,7 +107,7 @@ static int escape(unsigned char cmd[], int size, unsigned char res[], int * res_
 		memcpy(res, ccid_cmd+10, *res_size);
 	}
 
-	return 0;
+	return IFD_SUCCESS;
 }
 
 RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
@@ -199,55 +202,63 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 			bulk_out = ep_address;
 	}
 
+	// claim the USB interface
+	rv = libusb_claim_interface(device_handle, setting->bInterfaceNumber);
+	if (rv < 0)
+	{
+		Log2(PCSC_LOG_CRITICAL, "libusb_claim_interface: %s", libusb_error_name(rv));
+		return IFD_COMMUNICATION_ERROR;
+	}
+
 	// sequence to initialize the reader
-	escape(command_00001, sizeof command_00001, NULL, NULL);
-	escape(command_00002, sizeof command_00002, NULL, NULL);
-	escape(command_00003, sizeof command_00003, NULL, NULL);
-	escape(command_00004, sizeof command_00004, NULL, NULL);
-	escape(command_00005, sizeof command_00005, NULL, NULL);
-	escape(command_00006, sizeof command_00006, NULL, NULL);
-	escape(command_00007, sizeof command_00007, NULL, NULL);
-	escape(command_00008, sizeof command_00008, NULL, NULL);
-	escape(command_00009, sizeof command_00009, NULL, NULL);
+	Escape(command_00001, sizeof command_00001, NULL, NULL);
+	Escape(command_00002, sizeof command_00002, NULL, NULL);
+	Escape(command_00003, sizeof command_00003, NULL, NULL);
+	Escape(command_00004, sizeof command_00004, NULL, NULL);
+	Escape(command_00005, sizeof command_00005, NULL, NULL);
+	Escape(command_00006, sizeof command_00006, NULL, NULL);
+	Escape(command_00007, sizeof command_00007, NULL, NULL);
+	Escape(command_00008, sizeof command_00008, NULL, NULL);
+	Escape(command_00009, sizeof command_00009, NULL, NULL);
 
-	escape(command_00010, sizeof command_00010, NULL, NULL);
-	escape(command_00011, sizeof command_00011, NULL, NULL);
-	escape(command_00012, sizeof command_00012, NULL, NULL);
-	escape(command_00007, sizeof command_00007, NULL, NULL);
-	escape(command_00014, sizeof command_00014, NULL, NULL);
-	escape(command_00015, sizeof command_00015, NULL, NULL);
-	escape(command_00016, sizeof command_00016, NULL, NULL);
-	escape(command_00017, sizeof command_00017, NULL, NULL);
-	escape(command_00018, sizeof command_00018, NULL, NULL);
-	escape(command_00005, sizeof command_00005, NULL, NULL);
+	Escape(command_00010, sizeof command_00010, NULL, NULL);
+	Escape(command_00011, sizeof command_00011, NULL, NULL);
+	Escape(command_00012, sizeof command_00012, NULL, NULL);
+	Escape(command_00007, sizeof command_00007, NULL, NULL);
+	Escape(command_00014, sizeof command_00014, NULL, NULL);
+	Escape(command_00015, sizeof command_00015, NULL, NULL);
+	Escape(command_00016, sizeof command_00016, NULL, NULL);
+	Escape(command_00017, sizeof command_00017, NULL, NULL);
+	Escape(command_00018, sizeof command_00018, NULL, NULL);
+	Escape(command_00005, sizeof command_00005, NULL, NULL);
 
-	escape(command_00020, sizeof command_00020, NULL, NULL);
-	escape(command_00006, sizeof command_00006, NULL, NULL);
-	escape(command_00022, sizeof command_00022, NULL, NULL);
-	escape(command_00023, sizeof command_00023, NULL, NULL);
-	escape(command_00024, sizeof command_00024, NULL, NULL);
-	escape(command_00025, sizeof command_00025, NULL, NULL);
-	escape(command_00026, sizeof command_00026, NULL, NULL);
-	escape(command_00027, sizeof command_00027, NULL, NULL);
-	escape(command_00028, sizeof command_00028, NULL, NULL);
-	escape(command_00029, sizeof command_00029, NULL, NULL);
+	Escape(command_00020, sizeof command_00020, NULL, NULL);
+	Escape(command_00006, sizeof command_00006, NULL, NULL);
+	Escape(command_00022, sizeof command_00022, NULL, NULL);
+	Escape(command_00023, sizeof command_00023, NULL, NULL);
+	Escape(command_00024, sizeof command_00024, NULL, NULL);
+	Escape(command_00025, sizeof command_00025, NULL, NULL);
+	Escape(command_00026, sizeof command_00026, NULL, NULL);
+	Escape(command_00027, sizeof command_00027, NULL, NULL);
+	Escape(command_00028, sizeof command_00028, NULL, NULL);
+	Escape(command_00029, sizeof command_00029, NULL, NULL);
 
-	escape(command_00030, sizeof command_00030, NULL, NULL);
-	escape(command_00030, sizeof command_00030, NULL, NULL);
-	escape(command_00030, sizeof command_00030, NULL, NULL);
-	escape(command_00030, sizeof command_00030, NULL, NULL);
+	Escape(command_00030, sizeof command_00030, NULL, NULL);
+	Escape(command_00030, sizeof command_00030, NULL, NULL);
+	Escape(command_00030, sizeof command_00030, NULL, NULL);
+	Escape(command_00030, sizeof command_00030, NULL, NULL);
 
-	escape(command_00092, sizeof command_00092, NULL, NULL);
-	escape(command_00093, sizeof command_00093, NULL, NULL);
-	escape(command_00094, sizeof command_00094, NULL, NULL);
-	escape(command_00095, sizeof command_00095, NULL, NULL);
-	escape(command_00096, sizeof command_00096, NULL, NULL);
-	escape(command_00097, sizeof command_00097, NULL, NULL);
-	escape(command_00098, sizeof command_00098, NULL, NULL);
-	escape(command_00099, sizeof command_00099, NULL, NULL);
-	escape(command_00100, sizeof command_00100, NULL, NULL);
-	escape(command_00101, sizeof command_00101, NULL, NULL);
-	escape(command_00094, sizeof command_00094, NULL, NULL);
+	Escape(command_00092, sizeof command_00092, NULL, NULL);
+	Escape(command_00093, sizeof command_00093, NULL, NULL);
+	Escape(command_00094, sizeof command_00094, NULL, NULL);
+	Escape(command_00095, sizeof command_00095, NULL, NULL);
+	Escape(command_00096, sizeof command_00096, NULL, NULL);
+	Escape(command_00097, sizeof command_00097, NULL, NULL);
+	Escape(command_00098, sizeof command_00098, NULL, NULL);
+	Escape(command_00099, sizeof command_00099, NULL, NULL);
+	Escape(command_00100, sizeof command_00100, NULL, NULL);
+	Escape(command_00101, sizeof command_00101, NULL, NULL);
+	Escape(command_00094, sizeof command_00094, NULL, NULL);
 
 	return IFD_SUCCESS;
 }
@@ -570,14 +581,14 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 	unsigned char res[1024] = {0};
 	int res_size = sizeof res;
 
-	escape(command_00025, sizeof command_00025, res, &res_size);
+	Escape(command_00025, sizeof command_00025, res, &res_size);
 	if (res[54] != 13)
 	{
-		escape(command_02469, sizeof command_02469, NULL, NULL);
-		escape(command_02470, sizeof command_02470, NULL, NULL);
+		Escape(command_02469, sizeof command_02469, NULL, NULL);
+		Escape(command_02470, sizeof command_02470, NULL, NULL);
 
 		res_size = sizeof res;
-		escape(command_02471, sizeof command_02471, res, &res_size);
+		Escape(command_02471, sizeof command_02471, res, &res_size);
 
 #define UID_OFFSET 8
 		if (res_size > UID_OFFSET)
@@ -615,10 +626,10 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 	else
 		card_present = false;
 
-	escape(command_00027, sizeof command_00027, NULL, NULL);
-	escape(command_00028, sizeof command_00028, NULL, NULL);
-	escape(command_00029, sizeof command_00029, NULL, NULL);
-	escape(command_00030, sizeof command_00030, NULL, NULL);
+	Escape(command_00027, sizeof command_00027, NULL, NULL);
+	Escape(command_00028, sizeof command_00028, NULL, NULL);
+	Escape(command_00029, sizeof command_00029, NULL, NULL);
+	Escape(command_00030, sizeof command_00030, NULL, NULL);
 
 	return card_present ? IFD_ICC_PRESENT : IFD_ICC_NOT_PRESENT;
 }
