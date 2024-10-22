@@ -40,6 +40,7 @@ int bulk_out;
 unsigned char uid[10];		// in general 4 bytes only
 int uid_len;
 bool card_present = false;
+bool card_was_present = false;
 
 // check value returned by escape()
 #define Escape(a, b, c, d) do { int rv2 = escape(a, b, c, d); if (rv2 != IFD_SUCCESS) return rv2; } while (0)
@@ -604,11 +605,12 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 				b ^= res[UID_OFFSET + i];
 			if (b)
 			{
-				char collision[] = {1, 0, 0, 0};
-				if (0 == memcmp(collision, res + UID_OFFSET, sizeof collision))
+				char collision[] = {0, 0, 0};
+				if (0 == memcmp(collision, res + UID_OFFSET +1, sizeof collision))
 				{
 					Log1(PCSC_LOG_INFO, "collision detected");
 					card_present = true;
+					card_was_present = true;
 					uid_len = 0;
 				}
 				else
@@ -624,7 +626,15 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 		}
 	}
 	else
-		card_present = false;
+	{
+		if (card_was_present)
+		{
+			card_present = true;
+			card_was_present = false;
+		}
+		else
+			card_present = false;
+	}
 
 	Escape(command_00027, sizeof command_00027, NULL, NULL);
 	Escape(command_00028, sizeof command_00028, NULL, NULL);
