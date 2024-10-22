@@ -622,6 +622,7 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 				uid_len = len;
 
 				card_present = true;
+				card_was_present = true;
 			}
 		}
 	}
