@@ -165,7 +165,7 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	if (rv)
 	{
 		Log2(PCSC_LOG_CRITICAL, "libusb_init: %s", libusb_error_name(rv));
-		return IFD_COMMUNICATION_ERROR;
+		goto error;
 	}
 
 	// open the HID 5021 CL USB device
@@ -173,7 +173,7 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	if (!device_handle)
 	{
 		Log1(PCSC_LOG_CRITICAL, "Device not found");
-		return IFD_COMMUNICATION_ERROR;
+		goto error;
 	}
 
 	struct libusb_device * device = libusb_get_device(device_handle);
@@ -183,7 +183,7 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	if (rv < 0)
 	{
 		Log2(PCSC_LOG_CRITICAL, "libusb_get_active_config_descriptor: %s", libusb_error_name(rv));
-		return IFD_COMMUNICATION_ERROR;
+		goto error;
 	}
 
 	// use first interface and first setting
@@ -207,7 +207,7 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	if (rv < 0)
 	{
 		Log2(PCSC_LOG_CRITICAL, "libusb_claim_interface: %s", libusb_error_name(rv));
-		return IFD_COMMUNICATION_ERROR;
+		goto error;
 	}
 
 	// sequence to initialize the reader
@@ -261,6 +261,19 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	Escape(command_00094, sizeof command_00094, NULL, NULL);
 
 	return IFD_SUCCESS;
+
+error:
+	// close device
+	if (device_handle)
+		libusb_close(device_handle);
+	device_handle = NULL;
+
+	// close libusb
+	if (ctx)
+		libusb_exit(ctx);
+	ctx = NULL;
+
+	return IFD_COMMUNICATION_ERROR;
 }
 
 RESPONSECODE IFDHCloseChannel ( DWORD Lun ) {
