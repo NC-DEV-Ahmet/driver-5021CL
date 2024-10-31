@@ -40,7 +40,7 @@ static int uid_len;
 static bool card_present = false;
 
 // check value returned by escape()
-#define Escape(a, b, c, d) do { int rv2 = escape(a, b, c, d); if (rv2 != IFD_SUCCESS) return rv2; } while (0)
+#define Escape(a, b, c, d) do { if (escape(a, b, c, d) != IFD_SUCCESS) goto error; } while (0)
 
 // send a PC_to_RDR_Escape CCID command
 static int escape(unsigned char cmd[], int size, unsigned char res[], int * res_size)
@@ -503,7 +503,6 @@ RESPONSECODE IFDHTransmitToICC ( DWORD Lun, SCARD_IO_HEADER SendPci,
 	 your reader does not support memory cards or you don't want to then
 	 ignore this.
 
-     RxLength should be set to zero on error.
 
      returns:
 
@@ -656,5 +655,8 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 	Escape(command_00030, sizeof command_00030, NULL, NULL);
 
 	return card_present ? IFD_ICC_PRESENT : IFD_ICC_NOT_PRESENT;
+
+error:
+	return IFD_COMMUNICATION_ERROR;
 }
 
