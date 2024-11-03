@@ -84,6 +84,11 @@ static int escape(unsigned char cmd[], int size, unsigned char res[], int * res_
 	if (rv < 0)
 	{
 		Log2(PCSC_LOG_CRITICAL, "write failed: %s", libusb_error_name(rv));
+		if (LIBUSB_ERROR_TIMEOUT == rv)
+		{
+			rv = libusb_reset_device(device_handle);
+			Log2(PCSC_LOG_CRITICAL, "libusb_reset_device: %s", libusb_error_name(rv));
+		}
 		return IFD_COMMUNICATION_ERROR;
 	}
 
@@ -211,11 +216,22 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	}
 
 	// sequence to initialize the reader
-	Escape(command_00001, sizeof command_00001, NULL, NULL);
+
+	// if the driver was stopped _before_ a USB read the reader will
+	// timeout on a USB write. A reset is performed in escape() and we
+	// can retry the same command
+	if (escape(command_00001, sizeof command_00001, NULL, NULL) != IFD_SUCCESS)
+		Escape(command_00001, sizeof command_00001, NULL, NULL);
+
 	Escape(command_00002, sizeof command_00002, NULL, NULL);
 	Escape(command_00003, sizeof command_00003, NULL, NULL);
 	Escape(command_00004, sizeof command_00004, NULL, NULL);
-	Escape(command_00005, sizeof command_00005, NULL, NULL);
+
+	// this command may also timeout on USB write
+	if (escape(command_00005, sizeof command_00005, NULL, NULL) != IFD_SUCCESS)
+		Escape(command_00005, sizeof command_00005, NULL, NULL);
+
+	Escape(command_00006, sizeof command_00006, NULL, NULL);
 	Escape(command_00006, sizeof command_00006, NULL, NULL);
 	Escape(command_00007, sizeof command_00007, NULL, NULL);
 	Escape(command_00008, sizeof command_00008, NULL, NULL);
