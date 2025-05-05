@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #include <wintypes.h>
 #include <debuglog.h>
@@ -111,6 +112,29 @@ static int escape(unsigned char cmd[], int size, unsigned char res[], int * res_
 		*res_size = ccid_cmd[1];	// dwLength (use only 1st byte)
 		memcpy(res, ccid_cmd+10, *res_size);
 	}
+
+	return IFD_SUCCESS;
+}
+
+#define CONTROL(code) do { rv =libusb_control_transfer(device_handle, 0x41, 1, code, 0, NULL, 0, 1000);if (rv < 0) { Log2(PCSC_LOG_CRITICAL, "control failed: %s", libusb_error_name(rv)); return IFD_COMMUNICATION_ERROR; } } while (0)
+static int led_on(void)
+{
+	int rv;
+
+	CONTROL(0x031e);
+	CONTROL(0x031c);
+	CONTROL(0x031d);
+
+	return IFD_SUCCESS;
+}
+
+static int led_off(void)
+{
+	int rv;
+
+	CONTROL(0x031c);
+	CONTROL(0x031e);
+	CONTROL(0x031f);
 
 	return IFD_SUCCESS;
 }
@@ -275,6 +299,8 @@ RESPONSECODE IFDHCreateChannel ( DWORD Lun, DWORD Channel ) {
 	Escape(command_00100, sizeof command_00100, NULL, NULL);
 	Escape(command_00101, sizeof command_00101, NULL, NULL);
 	Escape(command_00094, sizeof command_00094, NULL, NULL);
+
+	led_off();
 
 	return IFD_SUCCESS;
 
@@ -640,6 +666,10 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 					card_present = true;
 					card_was_present = true;
 					uid_len = 0;
+
+					led_on();
+					usleep(100000);
+					led_off();
 				}
 				else
 					Log1(PCSC_LOG_CRITICAL, "invalid UID checksum");
@@ -651,6 +681,7 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 
 				card_present = true;
 				card_was_present = true;
+				led_on();
 			}
 		}
 	}
@@ -662,7 +693,10 @@ RESPONSECODE IFDHICCPresence( DWORD Lun ) {
 			card_was_present = false;
 		}
 		else
+		{
 			card_present = false;
+			led_off();
+		}
 	}
 
 	Escape(command_00027, sizeof command_00027, NULL, NULL);
